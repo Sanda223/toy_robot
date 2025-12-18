@@ -1,32 +1,69 @@
+// ui for toy robot app
+// trying to keep this file very plain so anyone can tweak it
 import { useState } from "react";
 import { executeCommand, getRobot } from "./logic/robot";
+import robotImage from "../robot.png";
 
+
+// how wide/tall the board is
 const GRID_SIZE = 5;
 
+
+// turn robot.png into the icon, rotate when needed
 function facingIcon(facing) {
-  if (facing === "NORTH") return "⬆️";
-  if (facing === "SOUTH") return "⬇️";
-  if (facing === "EAST") return "➡️";
-  if (facing === "WEST") return "⬅️";
-  return "🤖";
+  // start with north because the png faces north by default
+  // just spinning the same image keeps things simple
+  let spin = 0;
+  if (facing === "EAST") spin = 90;
+  if (facing === "SOUTH") spin = 180;
+  if (facing === "WEST") spin = -90;
+
+  return (
+    <img
+      src={robotImage}
+      alt="robot"
+      style={{
+        width: 42,
+        height: 42,
+        transform: `rotate(${spin}deg)`,
+        imageRendering: "auto",
+        pointerEvents: "none",
+      }}
+    />
+  );
 }
 
+
+
 export default function App() {
+  // text box content
   const [text, setText] = useState("");
+  // list of result lines shown in Output box
   const [output, setOutput] = useState([]);
+  // current robot position pulled from logic
   const [robotState, setRobotState] = useState(getRobot());
 
+
+
+  // run all commands typed in the box
   function run() {
+    // the idea: break the textarea by lines, run each, then print a status line
+    // nothing fancy; this mirrors how you might test commands by hand
+    // split by new lines and drop empties
     const lines = text
       .split("\n")
       .map((l) => l.trim())
       .filter(Boolean);
 
+
+
+    // execute each command and build printable result
     const results = lines.map((line) => {
       const res = executeCommand(line);
       return `${line} => ${res.success ? "OK" : "FAIL"}: ${res.message}`;
     });
 
+    // add to output and clear the textarea
     setOutput((prev) => [...prev, ...results]);
     setText("");
 
@@ -34,16 +71,24 @@ export default function App() {
     setRobotState(getRobot());
   }
 
+
+
   // build rows from top (y=4) to bottom (y=0)
+  // this draws the 5x5 grid as a bunch of divs
   const rows = [];
   for (let y = GRID_SIZE - 1; y >= 0; y--) {
+    // cells across this row
     const cells = [];
     for (let x = 0; x < GRID_SIZE; x++) {
+      // check if robot is on this square
       const isRobotHere =
         robotState.isplaced &&
         robotState.x === x &&
         robotState.y === y;
 
+
+
+      // push the square to the row
       cells.push(
         <div
           key={`${x}-${y}`}
@@ -65,6 +110,9 @@ export default function App() {
       );
     }
 
+
+
+    // push row to rows array
     rows.push(
       <div
         key={y}
@@ -77,8 +125,13 @@ export default function App() {
     );
   }
 
+
+
+  // labels for x axis
+  // these just show the numbers under the grid
   const xLabels = [];
   for (let x = 0; x < GRID_SIZE; x++) {
+    // 0..4 along bottom
     xLabels.push(
       <div
         key={`x-${x}`}
@@ -95,8 +148,13 @@ export default function App() {
     );
   }
 
+
+
+  // labels for y axis
+  // same idea but on the left side
   const yLabels = [];
   for (let y = GRID_SIZE - 1; y >= 0; y--) {
+    // 4..0 on the left side
     yLabels.push(
       <div
         key={`y-${y}`}
@@ -113,6 +171,8 @@ export default function App() {
       </div>
     );
   }
+
+
 
   return (
     <div
@@ -131,6 +191,8 @@ export default function App() {
           borderBottom: "1px solid #e5e7eb",
         }}
       >
+        {/* app title */}
+        {/* keep it small so the focus stays on the grid and commands */}
         <h1
           style={{
             textAlign: "center",
@@ -141,6 +203,8 @@ export default function App() {
           Toy Robot - Sandaru
         </h1>
       </div>
+
+
 
       {/* Middle section */}
       <div
@@ -184,6 +248,7 @@ export default function App() {
                 transformOrigin: "center",
               }}
             >
+              {/* x labels go on top of grid */}
               <div
                 style={{
                   display: "flex",
@@ -193,7 +258,7 @@ export default function App() {
               >
                 {xLabels}
               </div>
-
+              {/* grid with y labels on the left */}
               <div
                 style={{
                   display: "flex",
@@ -208,7 +273,7 @@ export default function App() {
                 >
                   {yLabels}
                 </div>
-
+                {/* actual grid squares */}
                 <div>{rows}</div>
               </div>
             </div>
@@ -222,6 +287,7 @@ export default function App() {
               textAlign: "center",
             }}
           >
+            {/* simple display of robot position */}
             Robot:{" "}
             {robotState.isplaced
               ? `${robotState.x}, ${robotState.y}, ${robotState.facing}`
@@ -261,7 +327,7 @@ export default function App() {
             }}
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder={`PLACE(0,0,NORTH)\nMOVE\nREPORT`}
+            placeholder={`PLACE(0,0,NORTH)\nMOVE\nLEFT\nRIGHT\nREPORT\n(facing can be NORTH / SOUTH / EAST / WEST)`}
           />
 
           <div
@@ -271,6 +337,8 @@ export default function App() {
               width: "100%",
             }}
           >
+            {/* run button covers whole width */}
+            {/* click it to process whatever is in the box */}
             <button
               onClick={run}
               style={{
@@ -293,6 +361,7 @@ export default function App() {
               boxSizing: "border-box",
             }}
           >
+            {/* results log */}
             <h2
               style={{
                 textAlign: "center",
